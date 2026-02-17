@@ -119,7 +119,26 @@ def insert_data_into_db(payload):
     create_db_table()
     # TODO: Implement the database call    
     
-    raise NotImplementedError("Database insert function not implemented.")
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            insert_sql = """
+                INSERT INTO events (title, description, image_url, date, location)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            cursor.execute(insert_sql, (
+                payload.get("title"),
+                payload.get("description"),
+                payload.get("image_url"),
+                payload.get("date"),
+                payload.get("location")
+            ))
+        connection.commit()
+    except Exception as e:
+        logging.exception("Failed to insert event into db")
+        raise RuntimeError(f"Insert failed: {str(e)}")
+    finally:
+        connection.close()
 
 #Database Function Stub
 def fetch_data_from_db():
@@ -128,8 +147,25 @@ def fetch_data_from_db():
     Implement this function to fetch your data from the database.
     """
     # TODO: Implement the database call
+    connection = get_db_connection()
+    try:
+        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+            fetch_sql = """
+                SELECT id, title, description, image_url, date, location
+                FROM events
+                ORDER BY date ASC
+            """
+            cursor.execute(fetch_sql)
+            results = cursor.fetchall()
+
+        return results
     
-    raise NotImplementedError("Database fetch function not implemented.")
+    except Exception as e:
+        logging.exception("Failed to fetch")
+        raise RuntimeError(f"Fetch failed: {str(e)}")
+    finally:
+        connection.close()
+    
 
 if __name__ == '__main__':
     application.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
